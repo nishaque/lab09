@@ -1,0 +1,20 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+../include/print.hpp
+fstream
+-
+iostream
+-
+string
+-
+
+/Users/nishaque/nishaque/workspace/projects/lab07/sources/print.cpp
+print.hpp
+-
+
