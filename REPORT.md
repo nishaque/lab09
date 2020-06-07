@@ -1,204 +1,218 @@
-## Laboratory work V
+## Laboratory work VII
 
-<a href="https://yandex.ru/efir/?stream_id=vQw_LH0UfN6I"><img src="https://raw.githubusercontent.com/tp-labs/lab05/master/preview.png" width="640"/></a>
 
-Данная лабораторная работа посвещена изучению фреймворков для тестирования на примере **GTest**
+<a href="https://yandex.ru/efir/?stream_id=vDHLoKtKoa3o"><img src="https://raw.githubusercontent.com/tp-labs/lab07/master/preview.png" width="640"/></a>
+
+Данная лабораторная работа посвещена изучению систем управления пакетами на примере **Hunter**
 
 ```sh
-$ open https://github.com/google/googletest
+$ open https://github.com/ruslo/hunter
 ```
 
 ## Tasks
 
-- [x] 1. Создать публичный репозиторий с названием **lab05** на сервисе **GitHub**
+- [x] 1. Создать публичный репозиторий с названием **lab07** на сервисе **GitHub**
 - [x] 2. Выполнить инструкцию учебного материала
 - [x] 3. Ознакомиться со ссылками учебного материала
 - [x] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
 
 ## Tutorial
-
-
-Создание переменных среды и установка их значений
+Создание переменных среды и установка их значений, а также связывание команд с их "новыми" названиями.
 ```sh
 $ export GITHUB_USERNAME=nishaque
-# Связывание  команды gsed c вызовом команды sed
-$ alias gsed=sed # for *-nix system
+$ alias gsed=sed
 ```
-
 Начало работы в каталоге workspace
 ```sh
 # Переход в  рабочую директорию
 $ cd ${GITHUB_USERNAME}/workspace
 $ pushd . # Сохранение текущего каталога в стек
-# Активация Node.js
+# Активация Node.js и rvm
 $ source scripts/activate
 ```
-Настройка git-репозитория **lab05** для работы
+Настройка git-репозитория **lab07** для работы
 ```sh
-$ git clone https://github.com/${GITHUB_USERNAME}/lab04 projects/lab05
-$ cd projects/lab05
+$ git clone https://github.com/${GITHUB_USERNAME}/lab06 projects/lab07
+$ cd projects/lab07
 $ git remote remove origin
-$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab05
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab07
 ```
-Подключение к репозиторию подмодуля **Google Test**, выбор версии с помощью переключения ветки
+Скачивание и подключение модуля `HunterGate`
 ```sh
-$ mkdir third-party
-# Клонирование репозитория Google к своему репозиторию как подмодуль(проект в проекте)
-$ git submodule add https://github.com/google/googletest third-party/gtest
+$ mkdir -p cmake # Создание директории где будут храниться файлы Hunter
+# Скачивание данных из файла в удаленном репозитории и их запись в файл HunterGate.cmake
+$ wget https://raw.githubusercontent.com/cpp-pm/gate/master/cmake/HunterGate.cmake -O cmake/HunterGate.cmake
+--2020-06-06 20:11:07--  https://raw.githubusercontent.com/cpp-pm/gate/master/cmake/HunterGate.cmake
+Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 151.101.84.133
+Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|151.101.84.133|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: 17070 (17K) [text/plain]
+Saving to: ‘cmake/HunterGate.cmake’
 
-Cloning into '/Users/nishaque/nishaque/workspace/projects/lab05/third-party/gtest'...
-remote: Enumerating objects: 20517, done.
-remote: Total 20517 (delta 0), reused 0 (delta 0), pack-reused 20517
-Receiving objects: 100% (20517/20517), 7.56 MiB | 1.28 MiB/s, done.
-Resolving deltas: 100% (15169/15169), done.
+cmake/HunterGate.cm 100%[===================>]  16.67K  --.-KB/s    in 0.03s   
 
-$ cd third-party/gtest && git checkout release-1.8.1 && cd ../..
-$ git add third-party/gtest
-$ git commit -m"added gtest framework"
-```
-Модифицируем CMakeList.txt
-```sh
-$ gsed -i "" '/option(BUILD_EXAMPLES "Build examples" OFF)/a\
-option(BUILD_TESTS "Build tests" OFF)
+2020-06-06 20:11:07 (498 KB/s) - ‘cmake/HunterGate.cmake’ saved [17070/17070]
+# Добавление HunterGate к CMake
+$ gsed -i "" '/cmake_minimum_required(VERSION 3.4)/a\
+
+include("cmake/HunterGate.cmake")
+HunterGate(
+    URL "https:\//github.com/cpp-pm/hunter/archive/v0.23.251.tar.gz"
+    SHA1 "5659b15dc0884d4b03dbd95710e6a1fa0fc3258d"
+)
 ' CMakeLists.txt
-$ cat >> CMakeLists.txt <<EOF
-
-if(BUILD_TESTS)
-  enable_testing()
-  add_subdirectory(third-party/gtest)
-  file(GLOB \${PROJECT_NAME}_TEST_SOURCES tests/*.cpp)
-  add_executable(check \${\${PROJECT_NAME}_TEST_SOURCES})
-  target_link_libraries(check \${PROJECT_NAME} gtest_main)
-  add_test(NAME check COMMAND check)
-endif()
-EOF
 ```
-Создание теста
+Теперь не нужно скачивать **GTest** самостоятельно. **Hunter** сам подтянет добавленные с помощью функции `hunter_add_package`.
 ```sh
-$ mkdir tests
-$ cat > tests/test1.cpp <<EOF
+# Удаление подмодуля с GTest
+$ git rm -rf third-party/gtest
+rm 'third-party/gtest'
+# Добавение через hunter пакета gtest и его поиск
+$ gsed -i "" '/set(PRINT_VERSION_STRING "v\${PRINT_VERSION}")/a\
+
+hunter_add_package(GTest)
+find_package(GTest CONFIG REQUIRED)
+' CMakeLists.txt
+# Удаление строки с добавлением поддиректории gtest
+$ gsed -i "" 's/gtest_main/GTest::gtest_main/' CMakeLists.txt
+# Замена обращение к gtest gtest_main на GTest::gtest_main
+$ gsed -i "" 's/gtest_main/GTest::gtest_main/' CMakeLists.txt
+```
+Сборка прокта при помощи **Hunter**.
+```sh
+# Видим как полключаются пакеты при помощи Hanter'a
+$ cmake -H. -B_builds -DBUILD_TESTS=ON
+...
+ -- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab07/_builds
+
+$ cmake --build _builds
+Scanning dependencies of target print
+[ 50%] Building CXX object CMakeFiles/print.dir/sources/print.cpp.o
+[100%] Linking CXX static library libprint.a
+[100%] Built target print
+
+$ cmake --build _builds --target test
+
+Running tests...
+Test project  /Users/nishaque/nishaque/workspace/projects/lab07/_builds
+    Start 1: check
+1/1 Test #1: check ............................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.00 sec
+
+# Вывод файлов из директории .hunter
+$ ls -la $HOME/.hunter
+total 0
+drwxr-xr-x   3 nishaque  staff    96 Mar  4 18:02 .
+drwxr-xr-x+ 42 nishaque  staff  1344 Jun  5 22:38 ..
+drwxr-xr-x   6 nishaque  staff   192 Mar  4 19:37 _Base
+
+```
+Установка **Hunter** в систему
+```sh
+$ git clone https://github.com/cpp-pm/hunter $HOME/nishaque/workspace/projects/hunter
+$ export HUNTER_ROOT=/Users/nishaque/nishaque/workspace/projects/hunter
+$ rm -rf _builds
+$ cmake -H. -B_builds -DBUILD_TESTS=ON
+
+-- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab07/_builds
+
+$ cmake --build _builds
+$ cmake --build _builds --target test
+```
+Добавление конфигурационного файла в проект, который будет содержать необходимую версию GTest.
+```sh
+# Просмотр дефолтной версии GTest
+$ cat $HUNTER_ROOT/cmake/configs/default.cmake | grep GTest
+  hunter_default_version(GTest VERSION 1.7.0-hunter-6)
+  hunter_default_version(GTest VERSION 1.10.0)
+# Просмотр всех версий GTest, поддерживаемых Hunter'ом
+$ cat $HUNTER_ROOT/cmake/projects/GTest/hunter.cmake
+$ mkdir cmake/Hunter
+# Установка нужной версии GTest
+$ cat > cmake/Hunter/config.cmake <<EOF
+hunter_config(GTest VERSION 1.7.0-hunter-9)
+EOF
+# add LOCAL in HunterGate function
+```
+Добавление файла, использующего библиотеку `print`
+```sh
+$ mkdir demo
+#
+$ cat > demo/main.cpp <<EOF
 #include <print.hpp>
 
-#include <gtest/gtest.h>
+#include <cstdlib>
 
-TEST(Print, InFileStream)
+int main(int argc, char* argv[])
 {
-  std::string filepath = "file.txt";
-  std::string text = "hello";
-  std::ofstream out{filepath};
-
-  print(text, out);
-  out.close();
-
-  std::string result;
-  std::ifstream in{filepath};
-  in >> result;
-
-  EXPECT_EQ(result, text);
+  const char* log_path = std::getenv("LOG_PATH");
+  if (log_path == nullptr)
+  {
+    std::cerr << "undefined environment variable: LOG_PATH" << std::endl;
+    return 1;
+  }
+  std::string text;
+  while (std::cin >> text)
+  {
+    std::ofstream out{log_path, std::ios_base::app};
+    print(text, out);
+    out << std::endl;
+  }
 }
 EOF
+
+$ gsed -i  '/endif()/a\
+
+add_executable(demo ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp)
+target_link_libraries(demo print)
+install(TARGETS demo RUNTIME DESTINATION bin)
+' CMakeLists.txt
 ```
-Сборка проекта
+Добавление подмодуля **polly**, который содержит инструкции для сборки проектов с установленным **Hunter**.
 ```sh
-# Генерация файлов для сборки с тестом
-$ cmake -H. -B_build -DBUILD_TESTS=ON
-...
--- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab05/_build
-$ cmake --build _build
-Scanning dependencies of target gtest
-...
-[100%] Linking CXX static library libgmock_main.a
-[100%] Built target gmock_main
-
-$ cmake --build _build --target test
-Running tests...
-Test project /Users/nishaque/nishaque/workspace/projects/lab05/_build
-    Start 1: check
-1/1 Test #1: check ............................   Passed    0.01 sec
-
-100% tests passed, 0 tests failed out of 1
-
-Total Test time (real) =   0.01 sec
-```
-Запуск тестов
-```sh
-$ _build/check
-
-Running main() from /Users/nishaque/nishaque/workspace/projects/lab05/third-party/gtest/googletest/src/gtest_main.cc
-[==========] Running 1 test from 1 test case.
-[----------] Global test environment set-up.
-[----------] 1 test from Print
-[ RUN      ] Print.InFileStream
-[       OK ] Print.InFileStream (1 ms)
-[----------] 1 test from Print (1 ms total)
-
-[----------] Global test environment tear-down
-[==========] 1 test from 1 test case ran. (1 ms total)
-[  PASSED  ] 1 test.
-
-$ cmake --build _build --target test -- ARGS=--verbose
+$ mkdir tools
+$ git submodule add https://github.com/ruslo/polly tools/polly
+$ tools/polly/bin/polly.py --test
 
 ...
-100% tests passed, 0 tests failed out of 1
-
-Total Test time (real) =   0.01 sec
-
+Log saved: /Users/nishaque/nishaque/workspace/projects/lab07/_logs/polly/default/log.txt
+-
+Generate: 0:00:04.861035s
+Build: 0:00:01.853576s
+Test: 0:00:00.040277s
+-
+Total: 0:00:06.755267s
+-
+SUCCESS
 ```
-Модифицируем `.travis.yml` и `README.md`
+Добавим изменения на удаленный репозиторий
 ```sh
-$ gsed -i "" 's/lab04/lab05/g' README.md
-$ gsed -i "" 's/\(DCMAKE_INSTALL_PREFIX=_install\)/\1 -DBUILD_TESTS=ON/' .travis.yml
-$ gsed -i "" '/cmake --build _build --target install/a\
-> - cmake --build _build --target test -- ARGS=--verbose
-> ' .travis.yml
-```
-Проверка `.travis.yml`
-```sh
-$ travis lint
-Hooray, .travis.yml looks valid :)
-```
-Фиксация изменений в репозитории
-```sh
-$ git add .travis.yml
-$ git add tests
-$ git add -p # запрос на изменение
-diff --git a/CMakeLists.txt b/CMakeLists.txt
-...
-
-$ git commit -m"added tests"
+$ git add .
+$ git commit -m "Add lab"
 $ git push origin master
-```
-Логинимся и включаем TravisCI для репозитория
-```sh
-$ travis login --pro
-Successfully logged in as nishaque!
-$ travis enable
-yesmishgan/lab05: enabled :)
-```
-Создаем директорию и делаем скриншот с задержкой в 20 сек
-```sh
-$ mkdir artifacts
-$ screencapture -T 20 artifacts/screenshot.png
 ```
 
 ## Report
-Создание отчета по ЛР № 5
+
 ```sh
 $ popd
-$ export LAB_NUMBER=05
+$ export LAB_NUMBER=07
 $ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
 $ mkdir reports/lab${LAB_NUMBER}
 $ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
 $ cd reports/lab${LAB_NUMBER}
-$ atom REPORT.md
+$ edit REPORT.md
 $ gist REPORT.md
 ```
 
 ## Links
 
-- [C++ CI: Travis, CMake, GTest, Coveralls & Appveyor](http://david-grs.github.io/cpp-clang-travis-cmake-gtest-coveralls-appveyor/)
-- [Boost.Tests](http://www.boost.org/doc/libs/1_63_0/libs/test/doc/html/)
-- [Catch](https://github.com/catchorg/Catch2)
+- [Create Hunter package](https://docs.hunter.sh/en/latest/creating-new/create.html)
+- [Custom Hunter config](https://github.com/ruslo/hunter/wiki/example.custom.config.id)
+- [Polly](https://github.com/ruslo/polly)
 
 ```
 Copyright (c) 2015-2020 The ISC Authors
