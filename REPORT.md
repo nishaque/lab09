@@ -1,218 +1,206 @@
-## Laboratory work VII
+## Laboratory work IX
 
+<a href="https://yandex.ru/efir/?stream_id=vYrKRcFKi46o"><img src="https://raw.githubusercontent.com/tp-labs/lab09/master/preview.png" width="640"/></a>
 
-<a href="https://yandex.ru/efir/?stream_id=vDHLoKtKoa3o"><img src="https://raw.githubusercontent.com/tp-labs/lab07/master/preview.png" width="640"/></a>
-
-Данная лабораторная работа посвещена изучению систем управления пакетами на примере **Hunter**
+Данная лабораторная работа посвещена изучению процесса создания артефактов на примере **Github Release**
 
 ```sh
-$ open https://github.com/ruslo/hunter
+$ open https://help.github.com/articles/creating-releases/
 ```
 
 ## Tasks
 
-- [x] 1. Создать публичный репозиторий с названием **lab07** на сервисе **GitHub**
-- [x] 2. Выполнить инструкцию учебного материала
-- [x] 3. Ознакомиться со ссылками учебного материала
-- [x] 4. Составить отчет и отправить ссылку личным сообщением в **Slack**
+- [x] 1. Создать публичный репозиторий с названием **lab09** на сервисе **GitHub**
+- [x] 2. Ознакомиться со ссылками учебного материала
+- [x] 3. Получить токен для доступа к репозиториям сервиса **GitHub**
+- [x] 4. Выполнить инструкцию учебного материала
+- [x] 5. Составить отчет и отправить ссылку личным сообщением в **Slack**
 
 ## Tutorial
-Создание переменных среды и установка их значений, а также связывание команд с их "новыми" названиями.
+Создание переменных среды и установка их значений.
 ```sh
+$ export GITHUB_TOKEN=fcaad8fb6d613b6859110ff8a3ae6553279e4aa9
 $ export GITHUB_USERNAME=nishaque
-$ alias gsed=sed
+$ export PACKAGE_MANAGER=brew
+$ export GPG_PACKAGE_NAME=gpg
 ```
-Начало работы в каталоге workspace
+Установка утилиты **xclip**, которая представляет доступ к буферу обмена X из командной строки.
+```sh
+# for *-nix system
+$ $PACKAGE_MANAGER install xclip
+$ alias gsed=sed
+# Связывание команды pbcopy с записью данных в секцию clipboard
+$ alias pbcopy='xclip -selection clipboard'
+# Связывание команды pbpaste с чтением данных из секции clipboard
+$ alias pbpaste='xclip -selection clipboard -o'
+```
+Установка приложения командной строки **github-release**, для работы с релизами на **Github**.
 ```sh
 # Переход в  рабочую директорию
 $ cd ${GITHUB_USERNAME}/workspace
 $ pushd . # Сохранение текущего каталога в стек
 # Активация Node.js и rvm
 $ source scripts/activate
+# Скачивание и установка пакета, написанного на языке программирования Go
+$ go get github.com/aktau/github-release
 ```
-Настройка git-репозитория **lab07** для работы
+Настройка git-репозитория **lab09** для работы.
 ```sh
-$ git clone https://github.com/${GITHUB_USERNAME}/lab06 projects/lab07
-$ cd projects/lab07
+$ git clone https://github.com/${GITHUB_USERNAME}/lab08 projects/lab09
+$ cd projects/lab09
 $ git remote remove origin
-$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab07
+$ git remote add origin https://github.com/${GITHUB_USERNAME}/lab09
 ```
-Скачивание и подключение модуля `HunterGate`
+Замена всех упоминаний `lab08` на `lab09`.
 ```sh
-$ mkdir -p cmake # Создание директории где будут храниться файлы Hunter
-# Скачивание данных из файла в удаленном репозитории и их запись в файл HunterGate.cmake
-$ wget https://raw.githubusercontent.com/cpp-pm/gate/master/cmake/HunterGate.cmake -O cmake/HunterGate.cmake
---2020-06-06 20:11:07--  https://raw.githubusercontent.com/cpp-pm/gate/master/cmake/HunterGate.cmake
-Resolving raw.githubusercontent.com (raw.githubusercontent.com)... 151.101.84.133
-Connecting to raw.githubusercontent.com (raw.githubusercontent.com)|151.101.84.133|:443... connected.
-HTTP request sent, awaiting response... 200 OK
-Length: 17070 (17K) [text/plain]
-Saving to: ‘cmake/HunterGate.cmake’
-
-cmake/HunterGate.cm 100%[===================>]  16.67K  --.-KB/s    in 0.03s   
-
-2020-06-06 20:11:07 (498 KB/s) - ‘cmake/HunterGate.cmake’ saved [17070/17070]
-# Добавление HunterGate к CMake
-$ gsed -i "" '/cmake_minimum_required(VERSION 3.4)/a\
-
-include("cmake/HunterGate.cmake")
-HunterGate(
-    URL "https:\//github.com/cpp-pm/hunter/archive/v0.23.251.tar.gz"
-    SHA1 "5659b15dc0884d4b03dbd95710e6a1fa0fc3258d"
-)
-' CMakeLists.txt
+$ gsed -i "" 's/lab08/lab09/g' README.md
 ```
-Теперь не нужно скачивать **GTest** самостоятельно. **Hunter** сам подтянет добавленные с помощью функции `hunter_add_package`.
+Установка и работа с программой **GPG** для шифрования информации и создания электронных цифровых подписей.
 ```sh
-# Удаление подмодуля с GTest
-$ git rm -rf third-party/gtest
-rm 'third-party/gtest'
-# Добавение через hunter пакета gtest и его поиск
-$ gsed -i "" '/set(PRINT_VERSION_STRING "v\${PRINT_VERSION}")/a\
+# Установка программы
+$ $PACKAGE_MANAGER install ${GPG_PACKAGE_NAME}
+$ gpg --list-secret-keys --keyid-format LONG
+$ gpg --full-generate-key
+$ gpg --list-secret-keys --keyid-format LONG
+$ gpg -K ${GITHUB_USERNAME}
+public and secret key created and signed.
 
-hunter_add_package(GTest)
-find_package(GTest CONFIG REQUIRED)
-' CMakeLists.txt
-# Удаление строки с добавлением поддиректории gtest
-$ gsed -i "" 's/gtest_main/GTest::gtest_main/' CMakeLists.txt
-# Замена обращение к gtest gtest_main на GTest::gtest_main
-$ gsed -i "" 's/gtest_main/GTest::gtest_main/' CMakeLists.txt
-```
-Сборка прокта при помощи **Hunter**.
-```sh
-# Видим как полключаются пакеты при помощи Hanter'a
-$ cmake -H. -B_builds -DBUILD_TESTS=ON
+pub   rsa2048 2020-06-07 [SC]
+      F595D023301AC6AC9B9801BE74277C96ED394E3C
+uid                      Yulia (//) <timoshenkojulie01@gmail.com>
+sub   rsa2048 2020-06-07 [E]
+
+# Создание переменной окружения с сохраненным в ней публичным ключом
+$ GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep ssb | tail -1 | awk '{print $2}' | awk -F'/' '{print $2}')
+# Создание переменной окружения с сохраненным в ней секретным ключом
+$ GPG_SEC_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | tail -1 | awk '{print $2}' | awk -F'/' '{print $2}')
+# Вывести ключ в ASCII и копировать его в буфер
+$ gpg --armor --export ${GPG_KEY_ID} | pbcopy
+# Вставить из буфера
+$ pbpaste
+-----BEGIN PGP PUBLIC KEY BLOCK-----
 ...
- -- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab07/_builds
+-----END PGP PUBLIC KEY BLOCK-----
+$ open https://github.com/settings/keys
+# Добавление секретного ключа к настройкам Git'a
+$ git config user.signingkey ${GPG_SEC_KEY_ID}
+$ git config gpg.program gpg
+```
+Создание скрипта дя добавления сообщения к тегу
+```sh
+$ test -r ~/.zsh_profile && echo 'export GPG_TTY=$(tty)' >> ~/.zsh_profile
+$ echo 'export GPG_TTY=$(tty)' >> ~/.profile
+```
+Генерация пакета с расширением `.tar.gz`
+```sh
+$ cmake -H. -B_build -DCPACK_GENERATOR="TGZ"
 
-$ cmake --build _builds
+-- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab09/_build
+
+$ cmake --build _build --target package
 Scanning dependencies of target print
 [ 50%] Building CXX object CMakeFiles/print.dir/sources/print.cpp.o
 [100%] Linking CXX static library libprint.a
 [100%] Built target print
-
-$ cmake --build _builds --target test
-
-Running tests...
-Test project  /Users/nishaque/nishaque/workspace/projects/lab07/_builds
-    Start 1: check
-1/1 Test #1: check ............................   Passed    0.00 sec
-
-100% tests passed, 0 tests failed out of 1
-
-Total Test time (real) =   0.00 sec
-
-# Вывод файлов из директории .hunter
-$ ls -la $HOME/.hunter
-total 0
-drwxr-xr-x   3 nishaque  staff    96 Mar  4 18:02 .
-drwxr-xr-x+ 42 nishaque  staff  1344 Jun  5 22:38 ..
-drwxr-xr-x   6 nishaque  staff   192 Mar  4 19:37 _Base
+Run CPack packaging tool...
+CPack: Create package using TGZ
+CPack: Install projects
+CPack: - Run preinstall target for: print
+CPack: - Install project: print []
+CPack: Create package
+CPack: - package: /Users/nishaque/nishaque/workspace/projects/lab09/_build/print-0.1.0.0-Darwin.tar.gz generated.
+```
+Инициализация проекта на **Travis CI**
+```sh
+$ travis login --auto --pro
+Successfully logged in as nishaque!
+$ travis enable --pro
+nishaque/lab09: enabled :)
+```
+Создание тега для коммита
+```sh
+# Создание тега с сообщением с информацией
+$ git tag -s v0.12.0.0
+$ git tag -v v0.1.0.0
+$ git show v0.1.0.0
+$ git push origin master --tags
+Enumerating objects: 101, done.
+Counting objects: 100% (101/101), done.
+Delta compression using up to 4 threads
+Compressing objects: 100% (67/67), done.
+Writing objects: 100% (101/101), 52.76 KiB | 13.19 MiB/s, done.
+Total 101 (delta 19), reused 101 (delta 19)
+remote: Resolving deltas: 100% (19/19), done.
+To https://github.com/nishaque/lab09
+ * [new branch]      master -> master
 
 ```
-Установка **Hunter** в систему
+Создание релиза
 ```sh
-$ git clone https://github.com/cpp-pm/hunter $HOME/nishaque/workspace/projects/hunter
-$ export HUNTER_ROOT=/Users/nishaque/nishaque/workspace/projects/hunter
-$ rm -rf _builds
-$ cmake -H. -B_builds -DBUILD_TESTS=ON
-
--- Build files have been written to: /Users/nishaque/nishaque/workspace/projects/lab07/_builds
-
-$ cmake --build _builds
-$ cmake --build _builds --target test
+# Проверка версии приложения
+$ github-release --version
+github-release v0.8.1
+$ github-release info -u ${GITHUB_USERNAME} -r lab09
+tags:
+- v0.1.0.0 (commit: https://api.github.com/repos/nishaque/lab09/commits/b77e72be8000ff846e42e4ccc4d878ebf02b7187)
+releases:
+# Создание релиза
+$ github-release release \
+    --user ${GITHUB_USERNAME} \
+    --repo lab09 \
+    --tag v0.1.0.0 \
+    --name "libprint" \
+    --description "my first release"
 ```
-Добавление конфигурационного файла в проект, который будет содержать необходимую версию GTest.
+Добавление артефакта с указанием ОС и архитектуры, на которых происходила компиляция библиотеки
 ```sh
-# Просмотр дефолтной версии GTest
-$ cat $HUNTER_ROOT/cmake/configs/default.cmake | grep GTest
-  hunter_default_version(GTest VERSION 1.7.0-hunter-6)
-  hunter_default_version(GTest VERSION 1.10.0)
-# Просмотр всех версий GTest, поддерживаемых Hunter'ом
-$ cat $HUNTER_ROOT/cmake/projects/GTest/hunter.cmake
-$ mkdir cmake/Hunter
-# Установка нужной версии GTest
-$ cat > cmake/Hunter/config.cmake <<EOF
-hunter_config(GTest VERSION 1.7.0-hunter-9)
-EOF
-# add LOCAL in HunterGate function
+$ export PACKAGE_OS=`uname -s` PACKAGE_ARCH=`uname -m`
+$ export PACKAGE_FILENAME=print-${PACKAGE_OS}-${PACKAGE_ARCH}.tar.gz
+$ github-release upload \
+    --user ${GITHUB_USERNAME} \
+    --repo lab09 \
+    --tag v0.1.0.0 \
+    --name "${PACKAGE_FILENAME}" \
+    --file _build/*.tar.gz
 ```
-Добавление файла, использующего библиотеку `print`
+
 ```sh
-$ mkdir demo
-#
-$ cat > demo/main.cpp <<EOF
-#include <print.hpp>
-
-#include <cstdlib>
-
-int main(int argc, char* argv[])
-{
-  const char* log_path = std::getenv("LOG_PATH");
-  if (log_path == nullptr)
-  {
-    std::cerr << "undefined environment variable: LOG_PATH" << std::endl;
-    return 1;
-  }
-  std::string text;
-  while (std::cin >> text)
-  {
-    std::ofstream out{log_path, std::ios_base::app};
-    print(text, out);
-    out << std::endl;
-  }
-}
-EOF
-
-$ gsed -i  '/endif()/a\
-
-add_executable(demo ${CMAKE_CURRENT_SOURCE_DIR}/demo/main.cpp)
-target_link_libraries(demo print)
-install(TARGETS demo RUNTIME DESTINATION bin)
-' CMakeLists.txt
-```
-Добавление подмодуля **polly**, который содержит инструкции для сборки проектов с установленным **Hunter**.
-```sh
-$ mkdir tools
-$ git submodule add https://github.com/ruslo/polly tools/polly
-$ tools/polly/bin/polly.py --test
-
-...
-Log saved: /Users/nishaque/nishaque/workspace/projects/lab07/_logs/polly/default/log.txt
--
-Generate: 0:00:04.861035s
-Build: 0:00:01.853576s
-Test: 0:00:00.040277s
--
-Total: 0:00:06.755267s
--
-SUCCESS
-```
-Добавим изменения на удаленный репозиторий
-```sh
-$ git add .
-$ git commit -m "Add lab"
-$ git push origin master
+$ github-release info -u ${GITHUB_USERNAME} -r lab09tags:
+# Скачивание артефакта из раздела релизов для проверки
+$ wget https://github.com/${GITHUB_USERNAME}/lab09/releases/download/v0.1.0.0/${PACKAGE_FILENAME}
+# Просмотр содержимого архива
+$ tar -ztf ${PACKAGE_FILENAME}
+print-0.1.0.0-Darwin/cmake/
+print-0.1.0.0-Darwin/cmake/print-config-noconfig.cmake
+print-0.1.0.0-Darwin/cmake/print-config.cmake
+print-0.1.0.0-Darwin/bin/
+print-0.1.0.0-Darwin/bin/demo
+print-0.1.0.0-Darwin/include/
+print-0.1.0.0-Darwin/include/print.hpp
+print-0.1.0.0-Darwin/lib/
+print-0.1.0.0-Darwin/lib/libprint.a
 ```
 
 ## Report
-
+Создание отчета по ЛР № 9
 ```sh
 $ popd
-$ export LAB_NUMBER=07
+$ export LAB_NUMBER=09
 $ git clone https://github.com/tp-labs/lab${LAB_NUMBER} tasks/lab${LAB_NUMBER}
 $ mkdir reports/lab${LAB_NUMBER}
 $ cp tasks/lab${LAB_NUMBER}/README.md reports/lab${LAB_NUMBER}/REPORT.md
 $ cd reports/lab${LAB_NUMBER}
-$ edit REPORT.md
-$ gist REPORT.md
+$ atom REPORT.md
+$ gistup -m "lab${LAB_NUMBER}"
 ```
 
 ## Links
 
-- [Create Hunter package](https://docs.hunter.sh/en/latest/creating-new/create.html)
-- [Custom Hunter config](https://github.com/ruslo/hunter/wiki/example.custom.config.id)
-- [Polly](https://github.com/ruslo/polly)
+- [Create Release](https://help.github.com/articles/creating-releases/)
+- [Get GitHub Token](https://help.github.com/articles/creating-a-personal-access-token-for-the-command-line/)
+- [Signing Commits](https://help.github.com/articles/signing-commits-with-gpg/)
+- [Go Setup](http://www.golangbootcamp.com/book/get_setup)
+- [github-release](https://github.com/aktau/github-release)
 
 ```
 Copyright (c) 2015-2020 The ISC Authors
